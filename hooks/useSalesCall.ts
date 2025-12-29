@@ -51,17 +51,28 @@ export const useSalesCall = () => {
   useEffect(() => {
     const fetchConfig = async () => {
       try {
-        console.log('=== Fetching Deepgram config from server ===');
+        console.log('=== Fetching Deepgram config ===');
+        console.log('API URL:', API_URL);
+
         const response = await fetch(`${API_URL}/api/config`);
+        console.log('Response status:', response.status);
 
         if (!response.ok) {
-          throw new Error('Failed to fetch config');
+          const text = await response.text();
+          console.error('Server response error:', text.substring(0, 200));
+          throw new Error(`Server error (${response.status})`);
+        }
+
+        const contentType = response.headers.get('content-type');
+        if (!contentType?.includes('application/json')) {
+          console.error('Invalid response type:', contentType);
+          throw new Error('Server returned invalid response');
         }
 
         const data = await response.json();
 
         if (!data.DEEPGRAM_API_KEY) {
-          throw new Error('Deepgram API key not configured on server');
+          throw new Error('DEEPGRAM_API_KEY not set on server');
         }
 
         console.log('=== Config loaded successfully ===');
@@ -69,9 +80,12 @@ export const useSalesCall = () => {
         setIsReady(true);
         setError(null);
       } catch (err: any) {
-        console.error('Failed to fetch config:', err);
-        setError('Failed to connect to server');
-        setIsReady(true); // Still set ready so UI isn't stuck
+        console.error('Config fetch failed:', err.message);
+        const errorMsg = err.message.includes('fetch')
+          ? 'Cannot reach server - is it running?'
+          : err.message;
+        setError(errorMsg);
+        setIsReady(true);
       }
     };
 

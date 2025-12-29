@@ -6,6 +6,7 @@ import { useSalesCall, Difficulty } from '../../hooks/useSalesCall';
 import { useCallStore } from '@/store/callStore';
 import { usePermission } from '@/hooks/usePermission';
 import { Contact, CONTACTS } from '@/types/contacts';
+import { VoiceVisualizer } from '@/components/VoiceVisualizer';
 
 const getDifficultyColor = (difficulty: Difficulty): [string, string] => {
   switch (difficulty) {
@@ -42,7 +43,7 @@ export default function HomeScreen() {
       try {
         const { configureAudioSession } = require('@/lib/audioConfig');
         configureAudioSession();
-      } catch (e) {}
+      } catch (e) { }
     }
   }, []);
 
@@ -73,7 +74,7 @@ export default function HomeScreen() {
     console.log('isReady:', isReady);
     console.log('error:', error);
     console.log('hasPermission:', hasPermission);
-    
+
     if (!selectedContact) {
       console.log('ERROR: No contact selected');
       return;
@@ -138,61 +139,99 @@ export default function HomeScreen() {
     </TouchableOpacity>
   );
 
+  // Call timer state
+  const [callDuration, setCallDuration] = useState(0);
+
+  useEffect(() => {
+    let timer: ReturnType<typeof setInterval> | null = null;
+    if (status === 'connected') {
+      timer = setInterval(() => {
+        setCallDuration(prev => prev + 1);
+      }, 1000);
+    } else if (status === 'idle' || status === 'ended') {
+      setCallDuration(0);
+    }
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [status]);
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
   if (selectedContact) {
     return (
       <LinearGradient colors={['#0F172A', '#1E293B']} style={styles.container}>
         <SafeAreaView style={styles.safeArea}>
           <View style={styles.callingHeader}>
-            <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
-              <Ionicons name="arrow-back" size={24} color="#E2E8F0" />
+            <TouchableOpacity onPress={handleBackPress} style={styles.backButton} disabled={status === 'connected'}>
+              <Ionicons name="arrow-back" size={24} color={status === 'connected' ? '#475569' : '#E2E8F0'} />
             </TouchableOpacity>
             <Text style={styles.callingTitle}>Sales Call</Text>
-            <View style={{ width: 40 }} />
+            {status === 'connected' && (
+              <View style={styles.timerBadge}>
+                <View style={styles.timerDot} />
+                <Text style={styles.timerText}>{formatTime(callDuration)}</Text>
+              </View>
+            )}
+            {status !== 'connected' && <View style={{ width: 80 }} />}
           </View>
 
           <View style={styles.callingContent}>
-            <View style={styles.contactAvatarLarge}>
-              <Text style={styles.contactAvatarLargeText}>{selectedContact.avatar}</Text>
-            </View>
-
-            <Text style={styles.callingName}>{selectedContact.name}</Text>
-            <Text style={styles.callingRole}>{selectedContact.role}</Text>
-            <Text style={styles.callingCompany}>{selectedContact.company}</Text>
-
-            <LinearGradient
-              colors={getDifficultyColor(selectedContact.difficulty)}
-              style={styles.callingDifficultyBadge}
-            >
-              <Text style={styles.callingDifficultyText}>{getDifficultyLabel(selectedContact.difficulty)} Level</Text>
-            </LinearGradient>
-
-            <View style={styles.objectivesContainer}>
-              <Text style={styles.objectivesTitle}>Call Objectives:</Text>
-              {selectedContact.objectives.map((obj, idx) => (
-                <Text key={idx} style={styles.objectiveItem}>• {obj}</Text>
-              ))}
-            </View>
+            {status === 'connected' ? (
+              // During call - show voice visualizer
+              <>
+                <VoiceVisualizer isSpeaking={isSpeaking} />
+                <Text style={styles.callingName}>{selectedContact.name}</Text>
+                <Text style={styles.speakingStatus}>
+                  {isSpeaking ? '🎙️ AI is speaking...' : '👂 Listening to you...'}
+                </Text>
+              </>
+            ) : (
+              // Before/after call - show contact info
+              <>
+                <View style={styles.contactAvatarLarge}>
+                  <Text style={styles.contactAvatarLargeText}>{selectedContact.avatar}</Text>
+                </View>
+                <Text style={styles.callingName}>{selectedContact.name}</Text>
+                <Text style={styles.callingRole}>{selectedContact.role}</Text>
+                <Text style={styles.callingCompany}>{selectedContact.company}</Text>
+                <LinearGradient
+                  colors={getDifficultyColor(selectedContact.difficulty)}
+                  style={styles.callingDifficultyBadge}
+                >
+                  <Text style={styles.callingDifficultyText}>{getDifficultyLabel(selectedContact.difficulty)} Level</Text>
+                </LinearGradient>
+                <View style={styles.objectivesContainer}>
+                  <Text style={styles.objectivesTitle}>Call Objectives:</Text>
+                  {selectedContact.objectives.map((obj, idx) => (
+                    <Text key={idx} style={styles.objectiveItem}>• {obj}</Text>
+                  ))}
+                </View>
+              </>
+            )}
 
             <Text style={styles.statusTextLarge}>{getStatusText()}</Text>
 
-            <View>
-              <TouchableOpacity
-                onPress={handleCallPress}
-                disabled={status === 'connecting' || !isReady}
-                activeOpacity={0.9}
+            <TouchableOpacity
+              onPress={handleCallPress}
+              disabled={status === 'connecting' || !isReady}
+              activeOpacity={0.9}
+            >
+              <LinearGradient
+                colors={getCallButtonColors()}
+                style={styles.callButton}
               >
-                <LinearGradient
-                  colors={getCallButtonColors()}
-                  style={styles.callButton}
-                >
-                  <Ionicons
-                    name={status === 'connected' ? 'call' : 'call-outline'}
-                    size={40}
-                    color="white"
-                  />
-                </LinearGradient>
-              </TouchableOpacity>
-            </View>
+                <Ionicons
+                  name={status === 'connected' ? 'call' : 'call-outline'}
+                  size={40}
+                  color="white"
+                />
+              </LinearGradient>
+            </TouchableOpacity>
 
             {status === 'connected' && (
               <Text style={styles.callHint}>Tap to end call</Text>
@@ -202,6 +241,7 @@ export default function HomeScreen() {
       </LinearGradient>
     );
   }
+
 
   return (
     <LinearGradient colors={['#0F172A', '#1E293B']} style={styles.container}>
@@ -236,22 +276,22 @@ const styles = StyleSheet.create({
   logo: { fontSize: 28, fontWeight: '800', color: '#FFFFFF', letterSpacing: -0.5 },
   subtitle: { fontSize: 16, color: '#94A3B8', marginTop: 8 },
   listContainer: { paddingHorizontal: 20, paddingBottom: 20 },
-  contactCard: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    backgroundColor: 'rgba(255,255,255,0.05)', 
-    borderRadius: 16, 
-    padding: 16, 
+  contactCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: 16,
+    padding: 16,
     marginBottom: 12,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.1)'
   },
-  contactAvatar: { 
-    width: 56, 
-    height: 56, 
-    borderRadius: 28, 
-    backgroundColor: 'rgba(255,255,255,0.1)', 
-    justifyContent: 'center', 
+  contactAvatar: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12
   },
@@ -260,34 +300,34 @@ const styles = StyleSheet.create({
   contactName: { fontSize: 16, fontWeight: '700', color: '#FFFFFF', marginBottom: 4 },
   contactRole: { fontSize: 13, color: '#94A3B8', marginBottom: 2 },
   contactCompany: { fontSize: 12, color: '#64748B' },
-  difficultyBadge: { 
-    paddingHorizontal: 10, 
-    paddingVertical: 6, 
-    borderRadius: 12 
+  difficultyBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12
   },
   difficultyBadgeText: { fontSize: 11, fontWeight: '700', color: '#FFFFFF' },
-  callingHeader: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    justifyContent: 'space-between', 
-    paddingHorizontal: 20, 
-    paddingTop: 20, 
-    paddingBottom: 10 
+  callingHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 10
   },
   backButton: { padding: 8 },
   callingTitle: { fontSize: 18, fontWeight: '700', color: '#FFFFFF' },
-  callingContent: { 
-    flex: 1, 
-    alignItems: 'center', 
-    justifyContent: 'center', 
-    paddingHorizontal: 32 
+  callingContent: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 32
   },
-  contactAvatarLarge: { 
-    width: 120, 
-    height: 120, 
-    borderRadius: 60, 
-    backgroundColor: 'rgba(255,255,255,0.1)', 
-    justifyContent: 'center', 
+  contactAvatarLarge: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 24,
     borderWidth: 3,
@@ -297,28 +337,28 @@ const styles = StyleSheet.create({
   callingName: { fontSize: 28, fontWeight: '800', color: '#FFFFFF', marginBottom: 8, textAlign: 'center' },
   callingRole: { fontSize: 16, color: '#94A3B8', marginBottom: 4, textAlign: 'center' },
   callingCompany: { fontSize: 14, color: '#64748B', marginBottom: 20, textAlign: 'center' },
-  callingDifficultyBadge: { 
-    paddingHorizontal: 20, 
-    paddingVertical: 10, 
-    borderRadius: 20, 
-    marginBottom: 24 
+  callingDifficultyBadge: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+    marginBottom: 24
   },
   callingDifficultyText: { fontSize: 14, fontWeight: '700', color: '#FFFFFF' },
-  objectivesContainer: { 
-    backgroundColor: 'rgba(255,255,255,0.05)', 
-    borderRadius: 16, 
-    padding: 20, 
+  objectivesContainer: {
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: 16,
+    padding: 20,
     marginBottom: 32,
     width: '100%'
   },
   objectivesTitle: { fontSize: 14, fontWeight: '700', color: '#FBBF24', marginBottom: 12, textTransform: 'uppercase', letterSpacing: 1 },
   objectiveItem: { fontSize: 14, color: '#E2E8F0', marginBottom: 8, lineHeight: 20 },
   statusTextLarge: { fontSize: 16, fontWeight: '600', color: '#94A3B8', marginBottom: 24, textAlign: 'center' },
-  callButton: { 
-    width: 80, 
-    height: 80, 
-    borderRadius: 40, 
-    justifyContent: 'center', 
+  callButton: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 8 },
@@ -327,11 +367,38 @@ const styles = StyleSheet.create({
     elevation: 12
   },
   callHint: { fontSize: 14, color: '#64748B', marginTop: 16, textAlign: 'center' },
-  webWarning: { 
-    backgroundColor: 'rgba(251, 191, 36, 0.1)', 
-    borderRadius: 12, 
-    padding: 16, 
-    margin: 20 
+  timerBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(239, 68, 68, 0.2)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  timerDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#EF4444',
+    marginRight: 8,
+  },
+  timerText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#EF4444',
+  },
+  speakingStatus: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#60A5FA',
+    marginTop: 16,
+    marginBottom: 24,
+  },
+  webWarning: {
+    backgroundColor: 'rgba(251, 191, 36, 0.1)',
+    borderRadius: 12,
+    padding: 16,
+    margin: 20
   },
   webWarningText: { fontSize: 14, color: '#FBBF24', textAlign: 'center', fontWeight: '600' },
 });
