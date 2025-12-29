@@ -1,0 +1,7 @@
+databases:
+  # No database needed for static site
+
+static_sites:
+  - name: sales-gym
+    build_command: npm run build:static
+    output_path: dist

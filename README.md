@@ -1,50 +1,115 @@
-# Welcome to your Expo app 👋
+# Sales Gym 🎯
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A minimalist sales practice app powered by AI voice technology. Practice your sales pitch with an AI sales trainer that provides realistic customer interactions.
 
-## Get started
+## Features
 
-1. Install dependencies
+- 🎤 **Voice-Powered Practice**: Real-time voice interaction with AI
+- 🎨 **Minimalist UI**: Clean, distraction-free interface
+- 🔒 **Secure API Management**: API keys stored securely on backend
+- ⚡ **Optimized Performance**: Keep-alive functionality prevents cold starts
+- 📱 **Cross-Platform**: Works on web, iOS, and Android
 
+## Quick Start
+
+### Local Development
+
+1. **Install dependencies**
    ```bash
    npm install
+   cd server && npm install && cd ..
    ```
 
-2. Start the app
-
+2. **Set up environment**
    ```bash
-   npx expo start
+   cp .env.example .env
+   ```
+   Edit `.env` and add your API backend URL (or use localhost for dev)
+
+3. **Run the API server** (in one terminal)
+   ```powershell
+   cd server
+   $env:DEEPGRAM_API_KEY="your-test-key"; npm start
    ```
 
-In the output, you'll find options to open the app in a
+4. **Run the app** (in another terminal)
+   ```bash
+   EXPO_PUBLIC_API_URL=http://localhost:3001 npx expo start
+   ```
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+5. **Open the app**
+   - Press `w` for web
+   - Scan QR code with Expo Go for mobile
+   - Press `a` for Android emulator
+   - Press `i` for iOS simulator
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+## Deployment
 
-## Get a fresh project
+See **[DEPLOYMENT.md](./DEPLOYMENT.md)** for complete deployment instructions including:
+- Secure API key management with Render
+- Frontend static site deployment
+- Keep-alive configuration
+- Production best practices
 
-When you're ready, run:
+## Project Structure
 
-```bash
-npm run reset-project
+```
+sales-gym/
+├── app/                    # React Native app screens
+│   ├── (tabs)/            # Tab navigation
+│   │   └── index.tsx      # Main screen with mic button
+│   └── _layout.tsx        # Root layout with keep-alive
+├── server/                # Backend API server
+│   ├── index.js          # Express server
+│   └── package.json      # Server dependencies
+├── hooks/                 # React hooks
+│   ├── useSalesCall.ts   # Deepgram Voice Agent integration
+│   └── usePermission.ts  # Microphone permissions
+├── utils/                 # Utilities
+│   └── keepAlive.ts      # Keep-alive pinging
+└── store/                 # State management
+    └── callStore.ts      # Call state (Zustand)
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## How It Works
 
-## Learn more
+1. **User taps microphone button** → App requests mic permissions
+2. **App fetches API key** → Securely retrieved from backend server
+3. **Deepgram Voice Agent connected** → Real-time voice AI interaction
+4. **AI responds** → GPT-4 powered sales trainer provides feedback
+5. **Keep-alive pings** → Prevents server from sleeping
 
-To learn more about developing your project with Expo, look at the following resources:
+## Security
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+- ✅ API keys stored in Render environment variables (never in code)
+- ✅ Backend API serves keys securely
+- ✅ `.env` files excluded from Git
+- ✅ HTTPS for all API communication
 
-## Join the community
+## Technologies
 
-Join our community of developers creating universal apps.
+- **Frontend**: React Native, Expo, TypeScript
+- **Backend**: Node.js, Express
+- **AI**: Deepgram Voice Agent API (STT + LLM + TTS), OpenAI GPT-4
+- **Hosting**: Render.com
+- **State**: Zustand
+- **Styling**: NativeWind (Tailwind CSS)
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+## Scripts
+
+```bash
+npm start              # Start Expo dev server
+npm run build:static   # Build static web app
+npm run serve          # Serve built app locally
+npm run android        # Run on Android
+npm run ios            # Run on iOS
+npm run web            # Run on web
+```
+
+## Support
+
+For deployment help, see [DEPLOYMENT.md](./DEPLOYMENT.md)
+
+## License
+
+MIT

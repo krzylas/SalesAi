@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: sales-gym-api
+    env: node
+    rootDir: server
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: VAPI_API_KEY
+        sync: false
