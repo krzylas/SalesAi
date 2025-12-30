@@ -238,9 +238,9 @@ export const useSalesCall = () => {
       socket.onopen = () => {
         console.log('=== Deepgram Voice Agent connected ===');
 
-        // Send configuration message
+        // Send configuration message (Voice Agent API V1 format)
         const configMessage = {
-          type: 'SettingsConfiguration',
+          type: 'Settings',
           audio: {
             input: {
               encoding: 'linear16',
@@ -248,12 +248,16 @@ export const useSalesCall = () => {
             },
             output: {
               encoding: 'linear16',
-              sample_rate: 16000,
+              sample_rate: 24000,
               container: 'none',
             },
           },
           agent: {
+            language: 'en',
             listen: {
+              provider: {
+                type: 'deepgram',
+              },
               model: 'nova-2',
             },
             think: {
@@ -261,10 +265,13 @@ export const useSalesCall = () => {
                 type: 'open_ai',
               },
               model: 'gpt-4o-mini',
-              instructions: SYSTEM_PROMPTS[difficulty],
+              prompt: SYSTEM_PROMPTS[difficulty],
             },
             speak: {
-              model: DEEPGRAM_VOICE_ID,
+              provider: {
+                type: 'deepgram',
+              },
+              model: 'aura-asteria-en',
             },
           },
         };
