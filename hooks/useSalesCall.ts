@@ -139,18 +139,44 @@ export const useSalesCall = () => {
         allowsRecordingIOS: true,
         playsInSilentModeIOS: true,
         staysActiveInBackground: true,
+        playThroughEarpieceAndroid: false,
       });
 
-      // Create recording with settings compatible with Deepgram
-      const { recording } = await Audio.Recording.createAsync(
-        Audio.RecordingOptionsPresets.HIGH_QUALITY
-      );
+      // For real-time streaming, we need expo-audio-stream package (requires dev build)
+      // This simple implementation uses a periodic recording approach
+      const recordingOptions = {
+        isMeteringEnabled: true,
+        android: {
+          extension: '.wav',
+          outputFormat: Audio.IOSOutputFormat.LINEARPCM as any,
+          audioEncoder: Audio.IOSAudioQuality.HIGH as any,
+          sampleRate: 16000,
+          numberOfChannels: 1,
+          bitRate: 256000,
+        },
+        ios: {
+          extension: '.wav',
+          outputFormat: Audio.IOSOutputFormat.LINEARPCM,
+          audioQuality: Audio.IOSAudioQuality.HIGH,
+          sampleRate: 16000,
+          numberOfChannels: 1,
+          bitRate: 256000,
+          linearPCMBitDepth: 16,
+          linearPCMIsBigEndian: false,
+          linearPCMIsFloat: false,
+        },
+        web: {
+          mimeType: 'audio/webm',
+          bitsPerSecond: 128000,
+        },
+      };
 
+      const { recording } = await Audio.Recording.createAsync(recordingOptions as any);
       recordingRef.current = recording;
-
-      // Note: Expo Audio doesn't provide real-time audio chunk streaming
-      // For now, this captures audio for later processing
       console.log('Recording started');
+
+      // Note: For true real-time streaming, you need expo-audio-stream (dev build required)
+      // This implementation records but doesn't stream in real-time
 
     } catch (error: any) {
       console.error('Failed to start recording:', error);
