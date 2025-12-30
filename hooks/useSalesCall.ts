@@ -257,21 +257,21 @@ export const useSalesCall = () => {
             listen: {
               provider: {
                 type: 'deepgram',
+                model: 'nova-3',
               },
-              model: 'nova-2',
             },
             think: {
               provider: {
                 type: 'open_ai',
+                model: 'gpt-4o-mini',
               },
-              model: 'gpt-4o-mini',
               prompt: SYSTEM_PROMPTS[difficulty],
             },
             speak: {
               provider: {
                 type: 'deepgram',
+                model: 'aura-2-thalia-en',
               },
-              model: 'aura-asteria-en',
             },
           },
         };
