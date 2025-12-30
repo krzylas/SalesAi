@@ -231,9 +231,8 @@ export const useSalesCall = () => {
       setError(null);
 
       // Create WebSocket connection to Deepgram Voice Agent
-      // Pass API key via URL query param (fetched securely from server)
-      const wsUrl = `${DEEPGRAM_AGENT_URL}?token=${config.DEEPGRAM_API_KEY}`;
-      const socket = new WebSocket(wsUrl);
+      // Use Sec-WebSocket-Protocol for authentication (required for React Native)
+      const socket = new WebSocket(DEEPGRAM_AGENT_URL, ['token', config.DEEPGRAM_API_KEY]);
       socketRef.current = socket;
 
       socket.onopen = () => {
